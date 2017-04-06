@@ -8,6 +8,7 @@ const pgp = require('pg-promise')({
 const bodyParser = require('body-parser');
 const app = express();
 const session = require('express-session');
+const bcrypt = require('bcrypt');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static('public'));
@@ -35,15 +36,23 @@ app.get('/login', function(req, resp) {
 app.post('/submit_login', function(req, resp) {
   var username = req.body.username;
   var password = req.body.password;
-  db.one(`select * from reviewer where name = $1 and password = $2`, [username, password])
-  .then(function() {
-    req.session.loggedInUser = username;
-    resp.redirect('/');
+  db.one(`select password from reviewer where name = $1`, [username])
+  .then(function(result) {
+    return bcrypt.compare(password, result.password);
   })
-  .catch(function(err) {
-    resp.redirect('/login');
+  .then(function(matched) {
+    if (matched) {
+      req.session.loggedInUser = username;
+      resp.redirect('/');
+    } else {
+      resp.redirect('/login');
+    }
+  })
+    .catch(function(err) {
+      resp.redirect('/login');
   });
 });
+
 //   if (username === 'Steven' && password === 'sgrod91') {
 //     //succesfull login
 //     req.session.loggedInUser = username;
@@ -52,6 +61,28 @@ app.post('/submit_login', function(req, resp) {
 //     resp.redirect('/login');
 //   }
 // });
+
+app.get('/sign_up', function(req, resp) {
+  resp.render('sign_up.hbs');
+});
+
+app.post('/submit_registration', function(req, res, next) {
+  var info = req.body;
+  var username = req.body.username;
+  var email = req.body.email;
+  var password = req.body.password;
+  bcrypt.hash(info.password, 10)
+    .then(function(encryptedPassword) {
+      console.log(encryptedPassword);
+      return db.none(`insert into reviewer values (default, $1, $2, 1, $3)`,
+      [info.username, info.email, encryptedPassword]);
+    })
+    .then(function() {
+      req.session.loggedInUser = info.username;
+      res.redirect('/login');
+    })
+    .catch(next);
+});
 
 app.use(function authentication(req, resp, next) {
   if (req.session.loggedInUser) {

@@ -1,5 +1,5 @@
 Hello, {{name}}!
-<form action="/search_results" method="GET">
+<form action="/search_results" id="search-form" method="GET">
 
   <label><h1>Welcome to Restaurant Reviewer</h1></label><br>
   Enter Restaurant or Category Name: <input type="text" name="searchTerm" size="50">
@@ -8,3 +8,19 @@ Hello, {{name}}!
   <button type="submit">Search</button>
 </form>
 <p><a href="/logout">Log out</a></p>
+<div id="search-results"></div>
+<script>
+$('#search-form').keyup(function(event) {
+  event.preventDefault();
+  let searchTerm = $('#search-form input').val();
+if (searchTerm === ""){
+  $('#search-results').html(null);
+}else {
+  $.get('/search_results?searchTerm=' + searchTerm)
+    .then(function(resultsHTML) {
+      $('#search-results').html(resultsHTML);
+    });
+    }
+});
+
+</script>

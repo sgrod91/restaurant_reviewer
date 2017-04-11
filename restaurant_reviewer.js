@@ -113,6 +113,7 @@ app.get('/search_results', function(req, resp, next) {
     .then(function(resultsArray) {
       console.log('results', resultsArray);
       resp.render('search_results.hbs', {
+        layout: false,
         results: resultsArray
       });
     })
